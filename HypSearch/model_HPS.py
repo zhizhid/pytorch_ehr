@@ -16,14 +16,29 @@ use_cuda = torch.cuda.is_available()
 
 # Model 1:RNN     
 class EHR_RNN(nn.Module):
-    def __init__(self, input_size, embed_dim , n_hidden, n_layers=1 , dropout_r=0.1 , cell_type='LSTM'):
+    def __init__(self, input_size, hidden_size,embed_dim, n_layers=1,dropout_r=0.1,cell_type='LSTM',bi=False , preTrainEmb=False):
         super(EHR_RNN, self).__init__()
         self.n_layers = n_layers
-        self.hidden_size = n_hidden
+        self.hidden_size = hidden_size
         self.embed_dim = embed_dim
         self.dropout_r = dropout_r
         self.cell_type = cell_type
-        self.embedBag = nn.EmbeddingBag(input_size, self.embed_dim,mode= 'sum')
+        self.preTrainEmb=preTrainEmb
+        self.bi =bi
+        
+        if self.preTrainEmb:
+            emb_pretrain = np.loadtxt(open("emb_merged.tsv", "rb"), delimiter="\t", skiprows=1, usecols=range(2,130))
+            emb_mt= np.asmatrix(emb_pretrain)
+            emb_t= torch.FloatTensor(emb_mt)
+            #emb_t.size()
+            self.embed_dim = emb_t.size(1)
+            input_size = emb_t.size(0)
+            self.embedBag= nn.EmbeddingBag(emb_t.size(0),emb_t.size(1),mode= 'sum')
+            self.embedBag.weight.data=emb_t
+            self.embedBag.weight.requires_grad=False
+          
+        else:
+            self.embedBag = nn.EmbeddingBag(input_size, self.embed_dim,mode= 'sum')
         
         
         
@@ -36,9 +51,12 @@ class EHR_RNN(nn.Module):
         else:
             raise NotImplementedError
         
-        self.rnn_c = cell(self.embed_dim, self.hidden_size,num_layers=n_layers, dropout= dropout_r )
+        self.rnn_c = cell(self.embed_dim, hidden_size,num_layers=n_layers, dropout= dropout_r , bidirectional=bi )
         
-        self.out = nn.Linear(self.hidden_size,1)
+        if bi:
+            self.out = nn.Linear(self.hidden_size*2,1)
+        else: 
+            self.out = nn.Linear(self.hidden_size,1)
         self.sigmoid = nn.Sigmoid()
 
         
@@ -46,13 +64,14 @@ class EHR_RNN(nn.Module):
         
         lp= len(max(seq_mini_batch, key=lambda xmb: len(xmb[1]))[1]) # max number of visitgs within mb ??? verify again
         #print ('longest',lp)
-        tb= torch.FloatTensor(len(seq_mini_batch),lp,self.embed_dim) 
-        lbt1= torch.FloatTensor(len(seq_mini_batch),1)
-
-        for pt in range(len(seq_mini_batch)):
+        bsize=len(seq_mini_batch)
+        tb= torch.FloatTensor(bsize,lp,self.embed_dim) 
+        lbt1= torch.FloatTensor(bsize,1)
+        tb_ls=[0]*bsize
+        for pt in range(bsize):
               
             lbt ,pt_visits =seq_mini_batch[pt]
-            lbt1[pt] = torch.FloatTensor([[float(lbt)]])
+            lbt1[bsize-1-pt] = torch.FloatTensor([[float(lbt)]])
             ml=(len(max(pt_visits, key=len))) ## getting the visit with max no. of codes ##the max number of visits for pts within the minibatch
             txs= torch.LongTensor(len(pt_visits),ml)
             
@@ -68,29 +87,37 @@ class EHR_RNN(nn.Module):
             emb_bp= self.embedBag(Variable(txs)) ### embed will be num_of_visits*max_num_codes*embed_dim 
             #### the embed Bag dim will be num_of_visits*embed_dim
             
-            zp= nn.ZeroPad2d((0,0,0,(lp-len(pt_visits))))
+            lpx=len(pt_visits)
+            lpp= lp-lpx
+            zp= nn.ZeroPad2d((0,0,0,lpp))
             xzp= zp(emb_bp)
-            tb[pt]=xzp.data
+            tb[bsize-1-pt]=xzp.data
+            tb_ls[bsize-1-pt]= lpx
+            
 
         tb= tb.permute(1, 0, 2) ### as my final input need to be seq_len x batch_size x input_size
         emb_m=Variable(tb)
+              
         label_tensor = Variable(lbt1)
 
         if use_cuda:
                 label_tensor = label_tensor.cuda()
                 emb_m = emb_m.cuda()
-        #print (label_tensor)        
-        return emb_m , label_tensor
+        #print (label_tensor)
+        
+        return emb_m , tb_ls, label_tensor
 
     def forward(self, input):
         
-        x_in , lt = self.EmbedPatient_MB(input)
-        
-        for i in range(self.n_layers):
-                output, hidden = self.rnn_c(x_in) # input (seq_len, batch, input_size) need to check torch.nn.utils.rnn.pack_padded_sequence() 
-                                                          
-        output = self.sigmoid(self.out(output[0]))
-        #print (output, lt)
+        x_inp ,x_lens, lt = self.EmbedPatient_MB(input)
+        x_in = nn.utils.rnn.pack_padded_sequence(x_inp,x_lens)
+        output, hidden = self.rnn_c(x_in) # input (seq_len, batch, input_size) need to check torch.nn.utils.rnn.pack_padded_sequence() 
+        if self.cell_type == "LSTM":
+            hidden=hidden[0]
+        if self.bi:
+            output = self.sigmoid(self.out(torch.cat((hidden[-2],hidden[-1]),1)))
+        else:
+            output = self.sigmoid(self.out(hidden[-1]))
         return output, lt
 
 
@@ -294,7 +321,7 @@ class DRNN(nn.Module):
             return c
             
             
-#Model 3: CNN_EHR            
+#Model 4: CNN_EHR            
 
 class CNN_EHR(nn.Module):
    

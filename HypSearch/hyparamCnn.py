@@ -40,7 +40,7 @@ def print2file(buf, outFile):
 	outfd.write(buf + '\n')
 	outfd.close()
 
-logFile='testCNN1.log'
+logFile='test_h143_RNN_forward.log'
 header = 'Model|EmbSize|CellType/cnnGrp|n_Layers/dil_depth|Hidden/Ch_out|k|Dropout|Optimizer|LR|L2|EPs|BestValidAUC|TestAUC|atEpoch'
 print2file(header, logFile)
 
@@ -52,12 +52,14 @@ def model_tune(dlm_code, embdim_exp, hid_exp, layers_n, dropout, ct_code , opt_c
     dropout = round(dropout,1)
     k_size= int (k)
     
-    if int(dlm_code)<3:
+    if int(dlm_code)<4:
       if int(ct_code) ==1:
           cell_type='RNN'   
       elif int(ct_code) ==2:
           cell_type='LSTM'
       elif int(ct_code) ==3:
+          cell_type='GRU'
+      elif int(ct_code) ==4:
           cell_type='GRU'
     else:
         if int(ct_code)==3:
@@ -73,11 +75,14 @@ def model_tune(dlm_code, embdim_exp, hid_exp, layers_n, dropout, ct_code , opt_c
       
     if int(dlm_code)==1:
         w_model='RNN'
-        ehr_model = model.EHR_RNN(17000, embed_dim, hidden_size, n_layers, dropout, cell_type)
+        ehr_model = model.EHR_RNN(16000, embed_dim, hidden_size, n_layers, dropout, cell_type)
     elif int(dlm_code)==2:
+        w_model='BiRNN'
+        ehr_model = model.EHR_RNN(17000, embed_dim, hidden_size, n_layers, dropout, cell_type, bi=True)
+    elif int(dlm_code)==3:
         w_model='DRNN'
         ehr_model = model.DRNN(17000, embed_dim, hidden_size, n_layers, dropout, cell_type)
-    elif int(dlm_code)==3:
+    elif int(dlm_code)==4:
         w_model='CNN'
         ehr_model = model.CNN_EHR(17000, embed_dim, ch_out, kernel_size=k_size , dropout=dropout,dilation_depth=dil_depth, cnn_grp=cnn_grp) 
 
@@ -109,14 +114,17 @@ def model_tune(dlm_code, embdim_exp, hid_exp, layers_n, dropout, ct_code , opt_c
     elif int(opt_code) ==7:
          opt= 'SGD'
          optimizer = optim.SGD(ehr_model.parameters(), lr=lr, weight_decay=l2 ) ### other parameters
-    #elif int(opt_code) ==8:
+    elif int(opt_code) ==8:
     #     opt= 'SparseAdam'
     #     optimizer = optim.SparseAdam(ehr_model.parameters(), lr=lr , eps=eps) ### Beta defaults (0.9, 0.999) no weight_decay
+         opt= 'SGD'
+         optimizer = optim.SGD(ehr_model.parameters(), lr=lr, weight_decay=l2 ) ### other parameters
 
-               
+    fname= w_model+'E'+str(embed_dim)+cell_type+'L'+str(n_layers)+'H'+str(hidden_size)+'D'+str(dropout)+opt+'L'+str(lr)+'P'+str(l2)          
     batch_size= int(bt_size)
-    bestValidAuc, buf = main_run.model_run (25,ehr_model,optimizer,batch_size,w_model)
+    bestValidAuc, buf = main_run.model_run (100,ehr_model,optimizer,batch_size,w_model,fname)
     pFile= w_model+'|'+str(embed_dim)+'|'+cell_type+'|'+str(n_layers)+'|'+str(hidden_size)+'|'+str(k_size)+'|'+str(dropout)+'|'+opt+'|'+str(lr)+'|'+str(l2)+'|'+str(eps)+ buf    
+    
     #little transformations to use the searched values
     
     print2file(pFile, logFile)
@@ -128,14 +136,14 @@ if __name__ == "__main__":
     gp_params = {"alpha": 1e-4}
 
     LRBO = BayesianOptimization(model_tune,
-        {'dlm_code': (3, 3),'embdim_exp': (5, 9),'hid_exp': (4, 8),'layers_n': (1, 4),'dropout': (0, 1),'ct_code': (1, 3),'opt_code': (1, 7),'l2_exp': (-5, -1), 'lr_exp': (-5, -1),'eps_exp': (-9, -6),'k': (2,8),'bt_size': (200, 200)})
-    LRBO.explore({'dlm_code': [3],'embdim_exp': [7],'hid_exp': [7],'layers_n': [2],'dropout': [0.1],'ct_code': [3],'opt_code': [3],'l2_exp': [-4], 'lr_exp': [-3],'eps_exp': [-7],'k': [2],'bt_size': [200]})
+        {'dlm_code': (1, 1),'embdim_exp': (4, 9),'hid_exp': (5, 8),'layers_n': (1, 3),'dropout': (0, 0.9),'ct_code': (1, 4),'opt_code': (1, 8),'l2_exp': (-6, -2), 'lr_exp': (-5, -1),'eps_exp': (-9, -6),'k': (0,0),'bt_size': (200, 200)})
+    LRBO.explore({'dlm_code': [1],'embdim_exp': [7],'hid_exp': [7],'layers_n': [1],'dropout': [0.5],'ct_code': [2],'opt_code': [1],'l2_exp': [-4], 'lr_exp': [-1],'eps_exp': [-6],'k': [2],'bt_size': [200]})
 
-    LRBO.maximize(n_iter=50, **gp_params)
+    LRBO.maximize(n_iter=100, **gp_params)
 
     print('-' * 53)
     print('Final Results')
     print('RNN / DRNN: %f' % LRBO.res['max']['max_val'])
     
-    print2file(LRBO.res['max'], logFile)
+    print2file(str(LRBO.res['max']), logFile)
 

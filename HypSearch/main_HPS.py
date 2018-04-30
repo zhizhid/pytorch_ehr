@@ -41,15 +41,15 @@ import TrVaTe as TVT #as TrainVaTe
 use_cuda = torch.cuda.is_available()
 print (use_cuda , torch.cuda.current_device())
 
-# load and prepare data
-set_x = pickle.load(open('Data/h143.visits', 'rb'), encoding='bytes')
-set_y = pickle.load(open('Data/h143.labels', 'rb'),encoding='bytes')
+# load already prepared data
 
-merged_set= [[set_y[i],set_x[i]] for i in range(len(set_y))] #list of list or list of lists of lists
-print("\nLoading and preparing data...")    
-train1, valid1, test1 = Loaddata.load_data(merged_set)
+train1 = pickle.load(open('Data/pdata_3hosp/h143_train', 'rb'), encoding='bytes')
+valid1 = pickle.load(open('Data/pdata_3hosp/h143_valid', 'rb'), encoding='bytes')
+test1 =  pickle.load(open('Data/pdata_3hosp/h143_test', 'rb'), encoding='bytes')
 
-def model_run(epochs, ehr_model,optimizer,batch_size,w_model ):
+
+
+def model_run(epochs, ehr_model,optimizer,batch_size,w_model,fnme):
  
   bestValidAuc = 0.0
   bestTestAuc = 0.0
@@ -62,12 +62,19 @@ def model_run(epochs, ehr_model,optimizer,batch_size,w_model ):
       if valid_auc > bestValidAuc: 
           bestValidAuc = valid_auc
           bestValidEpoch = ep
-          bestTestAuc, y_real, y_hat = TVT.calculate_auc(model = ehr_model, data = test1, which_model = w_model, batch_size = batch_size)
+          best_model= ehr_model
+          #shortTestAUC, y_real, y_hat  = TVT.calculate_auc(model = ehr_model, data = test_sh_L, which_model = w_model, batch_size = batch_size)
+          #longTestAUC, y_real, y_hat  = TVT.calculate_auc(model = ehr_model, data = test_l_L, which_model = w_model, batch_size = batch_size)
 
-      if ep - bestValidEpoch >3:
+      if ep - bestValidEpoch >12:
           break
-      
-  buf = '|%f |%f |%d ' % (bestValidAuc, bestTestAuc, bestValidEpoch)
+          
+  bmodel_pth='models/'+fnme
+  bestTestAuc, y_real, y_hat = TVT.calculate_auc(model = best_model, data = test1, which_model = w_model, batch_size = batch_size)
+  torch.save(best_model, bmodel_pth)
+  buf = '|%f |%f |%d ' % (bestValidAuc, bestTestAuc, bestValidEpoch )
+  #buf = '|%f |%f |%d |%f |%f' % (bestValidAuc, bestTestAuc, bestValidEpoch , shortTestAUC ,longTestAUC)
+  
 
 
   return bestValidAuc , buf

@@ -96,6 +96,7 @@ def train(data, model, optimizer, batch_size = 1, print_every = 10, plot_every =
 
 
 def calculate_auc(model, data, which_model, batch_size=1):  #here should be different for different models, for Laila's should be reshape, and extend 
+    data.sort(key=lambda pt:len(pt[1]))
     n_batches = int(np.ceil(int(len(data)) / int(batch_size)))
     y_real =[]
     y_hat= []
