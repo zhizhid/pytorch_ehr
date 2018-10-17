@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
+"""
+Created on Thu Mar  1 10:16:05 2018
 
-#latest codes for LR Dim2 as well as RNN from Laila 
-#for 2D LR: extracting embedded matrix by default; return output, real_label tensor and embeded. 
-#for 1D LR: modify embed_dim to 1 
-#variation for dim128 that takes in pretrained embeddings are also included 
+@author: jzhu8
+"""
 import numpy as np 
 import torch
 import torch.nn as nn
@@ -13,85 +13,48 @@ import torch.nn.functional as F
 
 use_cuda = torch.cuda.is_available()
 
-# Model 1: simple Logistic Regression(dimension = 2) 
-class EHR_LR(nn.Module):
-    def __init__(self,input_size, embed_dim = 2):    
-        super(EHR_LR, self).__init__()
-         
-        #object parameters and attributes 
-        self.embed_dim = embed_dim
-        self.embedding = nn.Embedding(input_size,embed_dim)
-        self.out = nn.Linear(self.embed_dim,1)
-        self.sigmoid = nn.Sigmoid()
-        #extracting initial weights, can be commentted out if not desired
-        self.x_emb_m = self.embedding.weight
-        
-    def forward(self, input):  #lets say the input the one sample data of the merged set  
-        label, ehr_seq = input[0] 
-        label_tensor = Variable(torch.FloatTensor([[float(label)]]))
-        if use_cuda:
-            label_tensor = label_tensor.cuda()
-        if use_cuda:
-            result = Variable(torch.LongTensor([int(v) for v in ehr_seq])).cuda() 
-        else:
-            result = Variable(torch.LongTensor([int(v) for v in ehr_seq])) 
-        embedded = self.embedding(result).view(-1, self.embed_dim) 
-        embedded = torch.sum(embedded, dim=0).view(1,-1)
-        output = self.sigmoid(self.out(embedded))
-        return output, label_tensor,embedded #return output and also label tensor
 
-# Model 1 variation: LR(dimension = 128) that takes in pretrained embeddings     
-class EHR_LR_pretr(nn.Module):
-    def __init__(self,input_size, embed_dim= 128, preTrainEmb=False):    
-        super(EHR_LR_pretr, self).__init__()
-    
-        self.embed_dim = embed_dim
-        #self.embedding = nn.Embedding(input_size,embed_dim)
-        self.out = nn.Linear(self.embed_dim,1)
-        self.sigmoid = nn.Sigmoid()
-        self.preTrainEmb=preTrainEmb
-        #Need to modify here 
-        if self.preTrainEmb:
-           self.embed_dim = emb_t.size(1)
-           input_size = emb_t.size(0)
-           self.embedding = nn.EmbeddingBag(emb_t.size(0),emb_t.size(1))#,mode= 'sum')
-           self.embedding.weight.data= emb_t
-           self.embedding.weight.requires_grad=False
-         
-        else:
-           self.embedding = nn.Embedding(input_size, self.embed_dim) #mode= 'sum')
-        
-
-    def forward(self, input):  #lets say the input the one sample data of the merged set  
-        label, ehr_seq = input[0] 
-        #print(input[0]) 
-        label_tensor = Variable(torch.FloatTensor([[float(label)]]))
-        if use_cuda:
-            label_tensor = label_tensor.cuda()
-        if use_cuda:
-            result = Variable(torch.LongTensor([int(v) for v in ehr_seq])).cuda() 
-        else:
-            result = Variable(torch.LongTensor([int(v) for v in ehr_seq])) 
-        embedded = self.embedding(result).view(-1, self.embed_dim) #modified, instead of (-1,1, self.hidden_size) => use (-1,self.hidden_size)
-        embedded = torch.sum(embedded, dim=0).view(1,-1)#modified,instead of (1,1,-1) => use .view(1,-1) 
-        output = self.sigmoid(self.out(embedded))
-        
-        return output, label_tensor #return output and also label tensor 
-    
-    
-    
-
-# Model 2:RNN     
+# Model 1:RNN     
 class EHR_RNN(nn.Module):
-    def __init__(self, input_size, embed_dim , n_hidden, n_layers=1 , dropout_r=0.1 , cell_type='LSTM'):
+    def __init__(self, input_size,embed_dim, hidden_size, n_layers=1,dropout_r=0.1,cell_type='LSTM',bii=False ,time=False, preTrainEmb=''):
         super(EHR_RNN, self).__init__()
         self.n_layers = n_layers
-        self.hidden_size = n_hidden
+        self.hidden_size = hidden_size
         self.embed_dim = embed_dim
         self.dropout_r = dropout_r
         self.cell_type = cell_type
-        self.embedBag = nn.EmbeddingBag(input_size, self.embed_dim,mode= 'sum')
+        self.preTrainEmb=preTrainEmb
+        self.time=time
         
+        if bii: self.bi=2 
+        else: self.bi=1
+            
+        if len(input_size)==1:
+            self.multi_emb=False
+            if len(self.preTrainEmb)>0:
+                emb_t= torch.FloatTensor(np.asmatrix(self.preTrainEmb))
+                self.embed= nn.Embedding.from_pretrained(emb_t)#,freeze=False) 
+                self.in_size= embed_dim ### need to be updated to be automatically capyured from the input
+            else:
+                input_size=input_size[0]
+                self.embed= nn.Embedding(input_size, self.embed_dim,padding_idx=0)#,scale_grad_by_freq=True)
+                self.in_size= embed_dim
+        else:
+            if len(input_size)!=3: raise ValueError('the input list either of 1 or 3 length')
+            else: 
+                self.multi_emb=True
+                self.diag=self.med=self.oth=1
+            
+            if input_size[0]> 0 : self.embed_d= nn.Embedding(input_size[0], self.embed_dim,padding_idx=0)#,scale_grad_by_freq=True)
+            else: self.diag=0
+            if input_size[1]> 0 : self.embed_m= nn.Embedding(input_size[1], self.embed_dim,padding_idx=0)#,scale_grad_by_freq=True)
+            else: self.med=0
+            if input_size[2]> 0 : self.embed_o= nn.Embedding(input_size[2], self.embed_dim,padding_idx=0)#,scale_grad_by_freq=True)
+            else: self.oth=0
+            self.in_size=(self.diag+self.med+self.oth)*embed_dim
+        
+        if self.time: self.in_size= self.in_size+1 
+               
         if self.cell_type == "GRU":
             cell = nn.GRU
         elif self.cell_type == "RNN":
@@ -100,78 +63,277 @@ class EHR_RNN(nn.Module):
             cell = nn.LSTM
         else:
             raise NotImplementedError
-        
-        self.rnn_c = cell(self.embed_dim, self.hidden_size,num_layers=n_layers, dropout= dropout_r )
-        
-        self.out = nn.Linear(self.hidden_size,1)
+            
+          
+        self.rnn_c = cell(self.in_size, hidden_size,num_layers=n_layers, dropout= dropout_r , bidirectional=bii , batch_first=True)
+        self.out = nn.Linear(self.hidden_size*self.bi,1)
         self.sigmoid = nn.Sigmoid()
 
         
-    def EmbedPatient_MB(self, seq_mini_batch): # x is a ehr_seq_tensor
-        
-        lp= len(max(seq_mini_batch, key=lambda xmb: len(xmb[1]))[1]) # max number of visitgs within mb ??? verify again
-        #print ('longest',lp)
-        tb= torch.FloatTensor(len(seq_mini_batch),lp,self.embed_dim) 
-        lbt1= torch.FloatTensor(len(seq_mini_batch),1)
-
-        for pt in range(len(seq_mini_batch)):
-              
-            lbt ,pt_visits =seq_mini_batch[pt]
-            lbt1[pt] = torch.FloatTensor([[float(lbt)]])
-            ml=(len(max(pt_visits, key=len))) ## getting the visit with max no. of codes ##the max number of visits for pts within the minibatch
-            txs= torch.LongTensor(len(pt_visits),ml)
-            
-            b=0
-            for i in pt_visits:
-                pd=(0, ml-len(i))
-                txs[b] = F.pad(torch.from_numpy(np.asarray(i)).view(1,-1),pd,"constant", 0).data
-                b=b+1
-            
-            if use_cuda:
-                txs=txs.cuda()
-                
-            emb_bp= self.embedBag(Variable(txs)) ### embed will be num_of_visits*max_num_codes*embed_dim 
-            #### the embed Bag dim will be num_of_visits*embed_dim
-            
-            zp= nn.ZeroPad2d((0,0,(lp-len(pt_visits)),0))
-            xzp= zp(emb_bp)
-            tb[pt]=xzp.data
-
-        tb= tb.permute(1, 0, 2) ### as my final input need to be seq_len x batch_size x input_size
-        emb_m=Variable(tb)
-        label_tensor = Variable(lbt1)
+    def EmbedPatient_MB(self, input): # x is a ehr_seq_tensor
 
         if use_cuda:
-                label_tensor = label_tensor.cuda()
-                emb_m = emb_m.cuda()
-        #print (label_tensor)        
-        return emb_m , label_tensor
+            flt_typ=torch.cuda.FloatTensor
+            lnt_typ=torch.cuda.LongTensor
+        else: 
+            lnt_typ=torch.LongTensor
+            flt_typ=torch.FloatTensor
+        mb=[]
+        mtd=[]
+        lbt=[]
+        seq_l=[]
+        self.bsize=len(input) ## no of pts in minibatch
+        lp= len(max(input, key=lambda xmb: len(xmb[-1]))[-1]) ## maximum number of visits per patients in minibatch
+        llv=0
+        for x in input:
+            lv= len(max(x[-1], key=lambda xmb: len(xmb[1]))[1])
+            if llv < lv:
+                llv=lv     # max number of codes per visit in minibatch        
 
+        for pt in input:
+            sk,label,ehr_seq_l = pt
+            lpx=len(ehr_seq_l) ## no of visits in pt record
+            seq_l.append(lpx) 
+            lbt.append(Variable(flt_typ([[float(label)]])))### check if code issue replace back to the above
+            ehr_seq_tl=[]
+            time_dim=[]
+            for ehr_seq in ehr_seq_l:
+                pd=(0, (llv -len(ehr_seq[1])))
+                result = F.pad(torch.from_numpy(np.asarray(ehr_seq[1],dtype=int)).type(lnt_typ),pd,"constant", 0)
+                ehr_seq_tl.append(result)
+                if self.time:                 
+                    #time_dim.append(Variable(torch.from_numpy(np.asarray(ehr_seq[0],dtype=int)).type(flt_typ)))
+                    # use log time as RETAIN
+                    time_dim.append(Variable(torch.div(flt_typ([1.0]), torch.log(torch.from_numpy(np.asarray(ehr_seq[0],dtype=int)).type(flt_typ) + flt_typ([2.7183])))))
+
+            ehr_seq_t= Variable(torch.stack(ehr_seq_tl,0)) 
+            lpp= lp-lpx ## diff be max seq in minibatch and cnt of pt visits
+            zp= nn.ZeroPad2d((0,0,0,lpp)) ## (0,0,0,lpp) when use the pack padded seq and (0,0,lpp,0) otherwise
+            ehr_seq_t= zp(ehr_seq_t) ## zero pad the visits med codes
+            mb.append(ehr_seq_t)
+            if self.time:
+                time_dim_v= Variable(torch.stack(time_dim,0))
+                time_dim_pv= zp(time_dim_v)## zero pad the visits time diff codes
+                mtd.append(time_dim_pv)
+
+            
+        mb_t= Variable(torch.stack(mb,0)) 
+        if use_cuda:
+            mb_t.cuda()
+        embedded = self.embed(mb_t)  ## Embedding for codes
+        embedded = torch.sum(embedded, dim=2) 
+        lbt_t= Variable(torch.stack(lbt,0))
+        if self.time:
+            mtd_t= Variable(torch.stack(mtd,0))
+            if use_cuda: mtd_t.cuda()
+            out_emb= torch.cat((embedded,mtd_t),dim=2)
+        else:
+            out_emb= embedded
+        return out_emb, lbt_t,seq_l #,dem_emb
+    
+    
+    def EmbedPatient_SMB(self, input): ## splitted input
+
+        if use_cuda:
+            flt_typ=torch.cuda.FloatTensor
+            lnt_typ=torch.cuda.LongTensor
+        else: 
+            lnt_typ=torch.LongTensor
+            flt_typ=torch.FloatTensor
+        mtd=[]
+        lbt=[]
+        seq_l=[]
+        self.bsize=len(input) ## no of pts in minibatch
+        lp= len(max(input, key=lambda xmb: len(xmb[-1]))[-1]) ## maximum number of visits per patients in minibatch # this remains fine with whatever input format
+
+        if self.diag==1: 
+            mbd=[]
+            llvd=0
+        if self.med==1:
+            mbm=[]
+            llvm=0
+        if self.oth==1:
+            mbo=[]      
+            llvo=0
+
+        for x in input:
+                if self.diag==1:
+                    lvd= len(max(x[-1], key=lambda xmb: len(xmb[1][0]))[1][0])
+                    if llvd < lvd:  llvd=lvd     # max number of diagnosis codes per visit in minibatch
+                if self.med==1:
+                    lvm= len(max(x[-1], key=lambda xmb: len(xmb[1][1]))[1][1])
+                    if llvm < lvm:  llvm=lvm     # max number of medication codes per visit in minibatch 
+                if self.oth==1:
+                    lvo= len(max(x[-1], key=lambda xmb: len(xmb[1][2]))[1][2])
+                    if llvo < lvo:  llvo=lvo     # max number of demographics and other codes per visit in minibatch                                     
+        #print(llvd,llvm,llvo)
+
+        for pt in input:
+            sk,label,ehr_seq_l = pt
+            lpx=len(ehr_seq_l) ## no of visits in pt record
+            seq_l.append(lpx) 
+            lbt.append(Variable(flt_typ([[float(label)]])))### check if code issue replace back to the above
+            time_dim=[]        
+            ehr_seq_tld=[]
+            ehr_seq_tlm=[]
+            ehr_seq_tlo=[]
+          
+            for ehr_seq in ehr_seq_l: 
+                if self.diag==1: 
+                    pdd=(0, (llvd -len(ehr_seq[1][0])))
+                    if len(ehr_seq[1][0])==0: resultd = F.pad(lnt_typ([0]),(0,llvd-1),"constant", 0)    
+                    else: resultd = F.pad(torch.from_numpy(np.asarray(ehr_seq[1][0],dtype=int)).type(lnt_typ),pdd,"constant", 0)
+                    ehr_seq_tld.append(resultd)
+                if self.med==1: 
+                    pdm=(0, (llvm -len(ehr_seq[1][1])))
+                    if len(ehr_seq[1][1])==0: resultm = F.pad(lnt_typ([0]),(0,llvm-1),"constant", 0)     
+                    else:resultm = F.pad(torch.from_numpy(np.asarray(ehr_seq[1][1],dtype=int)).type(lnt_typ),pdm,"constant", 0)
+                    ehr_seq_tlm.append(resultm)
+                if self.oth==1: 
+                    pdo=(0, (llvo -len(ehr_seq[1][2])))
+                    if len(ehr_seq[1][2])==0: resulto = F.pad(lnt_typ([0]),(0,llvo-1),"constant", 0)     
+                    else: resulto = F.pad(torch.from_numpy(np.asarray(ehr_seq[1][2],dtype=int)).type(lnt_typ),pdo,"constant", 0)
+                    ehr_seq_tlo.append(resulto)
+                
+                if self.time:                 
+                    #time_dim.append(Variable(torch.from_numpy(np.asarray(ehr_seq[0],dtype=int)).type(flt_typ)))
+                    # use log time as RETAIN
+                    time_dim.append(Variable(torch.div(flt_typ([1.0]), torch.log(torch.from_numpy(np.asarray(ehr_seq[0],dtype=int)).type(flt_typ) + flt_typ([2.7183])))))
+                    
+            lpp= lp-lpx ## diff be max seq in minibatch and cnt of pt visits
+            zp= nn.ZeroPad2d((0,0,0,lpp)) ## (0,0,0,lpp) when use the pack padded seq and (0,0,lpp,0) otherwise
+  
+            if self.diag==1:
+                ehr_seq_td= Variable(torch.stack(ehr_seq_tld,0))
+                ehr_seq_td= zp(ehr_seq_td) ## zero pad the visits diag codes
+                mbd.append(ehr_seq_td)
+            if self.med==1: 
+                ehr_seq_tm= Variable(torch.stack(ehr_seq_tlm,0)) 
+                ehr_seq_tm= zp(ehr_seq_tm) ## zero pad the visits med codes
+                mbm.append(ehr_seq_tm)
+            if self.oth==1: 
+                ehr_seq_to= Variable(torch.stack(ehr_seq_tlo,0)) 
+                ehr_seq_to= zp(ehr_seq_to) ## zero pad the visits dem&other codes
+                mbo.append(ehr_seq_to)
+            
+            if self.time:
+                time_dim_v= Variable(torch.stack(time_dim,0))
+                time_dim_pv= zp(time_dim_v)## zero pad the visits time diff codes
+                mtd.append(time_dim_pv)
+
+            
+        #mb_t= Variable(torch.stack(mb,0)) 
+        #if use_cuda:
+        #    mb_t.cuda()
+        #embedded = self.embed(mb_t)  ## Embedding for codes
+        #embedded = torch.sum(embedded, dim=2) #### split all the above
+        
+        if self.diag==1:
+            mb_td= Variable(torch.stack(mbd,0))
+            if use_cuda: mb_td.cuda()
+            embedded_d = torch.sum(self.embed_d(mb_td), dim=2)
+            embedded= embedded_d 
+        if self.med==1: 
+            mb_tm= Variable(torch.stack(mbm,0))
+            if use_cuda: mb_tm.cuda()  
+            embedded_m = torch.sum(self.embed_m(mb_tm), dim=2)
+            if self.diag==1: embedded=torch.cat((embedded,embedded_m),dim=2)
+            else: embedded=embedded_m 
+                
+        if self.oth==1: 
+            mb_to= Variable(torch.stack(mbo,0))
+            if use_cuda: mb_to.cuda()
+            embedded_o = torch.sum(self.embed_o(mb_to), dim=2)
+            if self.diag + self.med > 0 : embedded=torch.cat((embedded,embedded_o),dim=2)
+            else: embedded=embedded_o 
+
+        #embedded=torch.cat((embedded_d,embedded_m,embedded_o),dim=2)## the concatination of above
+        
+        lbt_t= Variable(torch.stack(lbt,0))
+        if self.time:
+            mtd_t= Variable(torch.stack(mtd,0))
+            if use_cuda: mtd_t.cuda()
+            out_emb= torch.cat((embedded,mtd_t),dim=2)
+        else:
+            out_emb= embedded
+        return out_emb, lbt_t,seq_l #,dem_emb
+ 
+    
+    
+    
+    
+    def init_hidden(self):
+        
+        h_0 = Variable(torch.rand(self.n_layers*self.bi,self.bsize, self.hidden_size))
+        
+        if use_cuda: h_0.cuda()
+
+        
+        if self.cell_type == "LSTM":
+            result = (h_0,h_0)
+        else: 
+            result = h_0
+            
+        
+        return result
+    
     def forward(self, input):
-        
-        x_in , lt = self.EmbedPatient_MB(input)
-        
-        for i in range(self.n_layers):
-                output, hidden = self.rnn_c(x_in) # input (seq_len, batch, input_size) need to check torch.nn.utils.rnn.pack_padded_sequence() 
-                                                          
-        output = self.sigmoid(self.out(output[-1]))
-        #print (output, lt)
-        return output, lt
+        if self.multi_emb: x_in , lt ,x_lens = self.EmbedPatient_SMB(input)
+        else: x_in , lt ,x_lens = self.EmbedPatient_MB(input)
+        x_inp = nn.utils.rnn.pack_padded_sequence(x_in,x_lens,batch_first=True)   
+        h_0= self.init_hidden()
+        output, hidden = self.rnn_c(x_inp)#,h_0) 
+        if self.cell_type == "LSTM":
+            hidden=hidden[0]
+        if self.bi==2:
+            output = self.sigmoid(self.out(torch.cat((hidden[-2],hidden[-1]),1)))
+        else:
+            output = self.sigmoid(self.out(hidden[-1]))
+        return output.squeeze(), lt.squeeze()
 
 
 #Model 2: DRNN
 class DRNN(nn.Module):
 
-    def __init__(self, input_size, embed_dim , n_hidden, n_layers=1 , dropout_r=0.1 , cell_type='LSTM'):
-    
+    def __init__(self,input_size, embed_dim, n_hidden,  n_layers, dropout_r=0, cell_type='GRU',time=False,preTrainEmb=''):
 
         super(DRNN, self).__init__()
 
         self.dilations = [2 ** i for i in range(n_layers)]
         self.cell_type = cell_type
         self.D = embed_dim
-        self.embedBag = nn.EmbeddingBag(input_size,self.D, mode= 'sum')
-        self.cells = nn.ModuleList([])
+        self.time=time
+        self.preTrainEmb=preTrainEmb
+        if len(input_size)==1:
+            self.multi_emb=False
+            if len(self.preTrainEmb)>0:
+                emb_t= torch.FloatTensor(np.asmatrix(self.preTrainEmb))
+                self.embed= nn.Embedding.from_pretrained(emb_t)#,freeze=False) 
+                self.in_size= embed_dim ### need to be updated to be automatically capyured from the input
+            else:
+                input_size=input_size[0]
+                self.embed= nn.Embedding(input_size, self.D,padding_idx=0)#,scale_grad_by_freq=True)
+                self.in_size= embed_dim
+        else:
+            if len(input_size)!=3: raise ValueError('the input list either of 1 or 3 length')
+            else: 
+                self.multi_emb=True
+                self.diag=self.med=self.oth=1
+            
+            if input_size[0]> 0 : self.embed_d= nn.Embedding(input_size[0], self.D,padding_idx=0)#,scale_grad_by_freq=True)
+            else: self.diag=0
+            if input_size[1]> 0 : self.embed_m= nn.Embedding(input_size[1], self.D,padding_idx=0)#,scale_grad_by_freq=True)
+            else: self.med=0
+            if input_size[2]> 0 : self.embed_o= nn.Embedding(input_size[2], self.D,padding_idx=0)#,scale_grad_by_freq=True)
+            else: self.oth=0
+            self.in_size=(self.diag+self.med+self.oth)*self.D
+        
+        if self.time: self.in_size= self.in_size+1 
+        
+        
+        
+        
+        self.layers = nn.ModuleList([])
 
         if self.cell_type == "GRU":
             cell = nn.GRU
@@ -179,90 +341,235 @@ class DRNN(nn.Module):
             cell = nn.RNN
         elif self.cell_type == "LSTM":
             cell = nn.LSTM
+        elif self.cell_type == "QRNN":
+            from torchqrnn import QRNN
+            cell = QRNN
         else:
             raise NotImplementedError
 
         for i in range(n_layers):
             if i == 0:
-                c = cell(embed_dim, n_hidden, dropout=dropout_r)
+                c = cell(self.in_size, n_hidden, dropout=dropout_r)
             else:
                 c = cell(n_hidden, n_hidden, dropout=dropout_r)
-            self.cells.append(c)
-
+            self.layers.append(c)
+        
+        self.cells = nn.Sequential(*self.layers)
+        
         self.out = nn.Linear(n_hidden,1)
 
     
 
-    def EmbedPatient_MB(self, seq_mini_batch): # x is a ehr_seq_tensor
-        
-       
-        lp= len(max(seq_mini_batch, key=lambda xmb: len(xmb[1]))[1])
-        tb= torch.FloatTensor(len(seq_mini_batch),lp,self.D) 
-        lbt1= torch.FloatTensor(len(seq_mini_batch),1)
-
-        for pt in range(len(seq_mini_batch)):
-              
-            lbt ,pt_visits =seq_mini_batch[pt]
-            lbt1[pt] = torch.FloatTensor([[float(lbt)]])
-            ml=(len(max(pt_visits, key=len))) ## getting the max number of visits for pts within the minibatch
-            txs= torch.LongTensor(len(pt_visits),ml)
-            
-            b=0
-            for i in pt_visits:
-                pd=(0, ml-len(i))
-                txs[b] = F.pad(torch.from_numpy(np.asarray(i)).view(1,-1),pd,"constant", 0).data
-                b=b+1
-            if use_cuda:
-                txs=txs.cuda()
-                
-            emb_bp= self.embedBag(Variable(txs)) ### embed will be num_of_visits*max_num_codes*embed_dim 
-            #### the embed Bag dim will be num_of_visits*embed_dim
-            
-            #print ('embed bag Matrix : /n' , emb_bp )
-            
-            zp= nn.ZeroPad2d((0,0,0,(lp-len(pt_visits))))
-            xzp= zp(emb_bp)
-
-            #print ('padded embed bag Matrix : /n' , xzp )
-
-            tb[pt]=xzp.data
-        
-        #print ('pts embed bag Matrix : /n' , tb )
-        
-        # input for RNN need to be seq_len, batch, input_size
-        tb= tb.permute(1, 0, 2)  ### as my final input need to be seq_len x batch_size x input_size 
-        
-        #print (tb.size())
-
-        #print ('Final input : /n' , tb )
-        
-        emb_m=Variable(tb)
-        label_tensor = Variable(lbt1)
+    def EmbedPatient_MB(self, input): # x is a ehr_seq_tensor
 
         if use_cuda:
-                label_tensor = label_tensor.cuda()
-                emb_m = emb_m.cuda()
-        
-        #print ('just for verificaton: /n Label tensor var: /n', label_tensor , 'input emb : /n', emb_m , 'input reformat done')
-        return emb_m , label_tensor
+            flt_typ=torch.cuda.FloatTensor
+            lnt_typ=torch.cuda.LongTensor
+        else: 
+            lnt_typ=torch.LongTensor
+            flt_typ=torch.FloatTensor
+        mb=[]
+        mtd=[]
+        lbt=[]
+        seq_l=[]
+        self.bsize=len(input) ## no of pts in minibatch
+        lp= len(max(input, key=lambda xmb: len(xmb[-1]))[-1]) ## maximum number of visits per patients in minibatch
+        llv=0
+        for x in input:
+            lv= len(max(x[-1], key=lambda xmb: len(xmb[1]))[1])
+            if llv < lv:
+                llv=lv     # max number of codes per visit in minibatch        
 
-    def forward(self, inputs, hidden=None):
+        for pt in input:
+            sk,label,ehr_seq_l = pt
+            lpx=len(ehr_seq_l) ## no of visits in pt record
+            seq_l.append(lpx) 
+            lbt.append(Variable(flt_typ([[float(label)]])))### check if code issue replace back to the above
+            ehr_seq_tl=[]
+            time_dim=[]
+            for ehr_seq in ehr_seq_l:
+                pd=(0, (llv -len(ehr_seq[1])))
+                result = F.pad(torch.from_numpy(np.asarray(ehr_seq[1],dtype=int)).type(lnt_typ),pd,"constant", 0)
+                ehr_seq_tl.append(result)
+                if self.time:                 
+                    #time_dim.append(Variable(torch.from_numpy(np.asarray(ehr_seq[0],dtype=int)).type(flt_typ)))
+                    # use log time as RETAIN
+                    time_dim.append(Variable(torch.div(flt_typ([1.0]), torch.log(torch.from_numpy(np.asarray(ehr_seq[0],dtype=int)).type(flt_typ) + flt_typ([2.7183])))))
+
+            ehr_seq_t= Variable(torch.stack(ehr_seq_tl,0)) 
+            lpp= lp-lpx ## diff be max seq in minibatch and cnt of pt visits
+            zp= nn.ZeroPad2d((0,0,lpp,0)) ## (0,0,0,lpp) when use the pack padded seq and (0,0,lpp,0) otherwise
+            ehr_seq_t= zp(ehr_seq_t) ## zero pad the visits med codes
+            mb.append(ehr_seq_t)
+            if self.time:
+                time_dim_v= Variable(torch.stack(time_dim,0))
+                time_dim_pv= zp(time_dim_v)## zero pad the visits time diff codes
+                mtd.append(time_dim_pv)
+
+            
+        mb_t= Variable(torch.stack(mb,0)) 
+        if use_cuda:
+            mb_t.cuda()
+        embedded = self.embed(mb_t)  ## Embedding for codes
+        embedded = torch.sum(embedded, dim=2) 
+        lbt_t= Variable(torch.stack(lbt,0))
+        if self.time:
+            mtd_t= Variable(torch.stack(mtd,0))
+            if use_cuda: mtd_t.cuda()
+            out_emb= torch.cat((embedded,mtd_t),dim=2)
+        else:
+            out_emb= embedded
+        return out_emb, lbt_t,seq_l #,dem_emb
+    
+    
+    def EmbedPatient_SMB(self, input): ## splitted input
+
+        if use_cuda:
+            flt_typ=torch.cuda.FloatTensor
+            lnt_typ=torch.cuda.LongTensor
+        else: 
+            lnt_typ=torch.LongTensor
+            flt_typ=torch.FloatTensor
+        mtd=[]
+        lbt=[]
+        seq_l=[]
+        self.bsize=len(input) ## no of pts in minibatch
+        lp= len(max(input, key=lambda xmb: len(xmb[-1]))[-1]) ## maximum number of visits per patients in minibatch # this remains fine with whatever input format
+
+        if self.diag==1: 
+            mbd=[]
+            llvd=0
+        if self.med==1:
+            mbm=[]
+            llvm=0
+        if self.oth==1:
+            mbo=[]      
+            llvo=0
+
+        for x in input:
+                if self.diag==1:
+                    lvd= len(max(x[-1], key=lambda xmb: len(xmb[1][0]))[1][0])
+                    if llvd < lvd:  llvd=lvd     # max number of diagnosis codes per visit in minibatch
+                if self.med==1:
+                    lvm= len(max(x[-1], key=lambda xmb: len(xmb[1][1]))[1][1])
+                    if llvm < lvm:  llvm=lvm     # max number of medication codes per visit in minibatch 
+                if self.oth==1:
+                    lvo= len(max(x[-1], key=lambda xmb: len(xmb[1][2]))[1][2])
+                    if llvo < lvo:  llvo=lvo     # max number of demographics and other codes per visit in minibatch                                     
+        #print(llvd,llvm,llvo)
+
+        for pt in input:
+            sk,label,ehr_seq_l = pt
+            lpx=len(ehr_seq_l) ## no of visits in pt record
+            seq_l.append(lpx) 
+            lbt.append(Variable(flt_typ([[float(label)]])))### check if code issue replace back to the above
+            time_dim=[]        
+            ehr_seq_tld=[]
+            ehr_seq_tlm=[]
+            ehr_seq_tlo=[]
+          
+            for ehr_seq in ehr_seq_l: 
+                if self.diag==1: 
+                    pdd=(0, (llvd -len(ehr_seq[1][0])))
+                    if len(ehr_seq[1][0])==0: resultd = F.pad(lnt_typ([0]),(0,llvd-1),"constant", 0)    
+                    else: resultd = F.pad(torch.from_numpy(np.asarray(ehr_seq[1][0],dtype=int)).type(lnt_typ),pdd,"constant", 0)
+                    ehr_seq_tld.append(resultd)
+                if self.med==1: 
+                    pdm=(0, (llvm -len(ehr_seq[1][1])))
+                    if len(ehr_seq[1][1])==0: resultm = F.pad(lnt_typ([0]),(0,llvm-1),"constant", 0)     
+                    else:resultm = F.pad(torch.from_numpy(np.asarray(ehr_seq[1][1],dtype=int)).type(lnt_typ),pdm,"constant", 0)
+                    ehr_seq_tlm.append(resultm)
+                if self.oth==1: 
+                    pdo=(0, (llvo -len(ehr_seq[1][2])))
+                    if len(ehr_seq[1][2])==0: resulto = F.pad(lnt_typ([0]),(0,llvo-1),"constant", 0)     
+                    else: resulto = F.pad(torch.from_numpy(np.asarray(ehr_seq[1][2],dtype=int)).type(lnt_typ),pdo,"constant", 0)
+                    ehr_seq_tlo.append(resulto)
+                
+                if self.time:                 
+                    #time_dim.append(Variable(torch.from_numpy(np.asarray(ehr_seq[0],dtype=int)).type(flt_typ)))
+                    # use log time as RETAIN
+                    time_dim.append(Variable(torch.div(flt_typ([1.0]), torch.log(torch.from_numpy(np.asarray(ehr_seq[0],dtype=int)).type(flt_typ) + flt_typ([2.7183])))))
+                    
+            lpp= lp-lpx ## diff be max seq in minibatch and cnt of pt visits
+            zp= nn.ZeroPad2d((0,0,lpp,0)) ## (0,0,0,lpp) when use the pack padded seq and (0,0,lpp,0) otherwise
+  
+            if self.diag==1:
+                ehr_seq_td= Variable(torch.stack(ehr_seq_tld,0))
+                ehr_seq_td= zp(ehr_seq_td) ## zero pad the visits diag codes
+                mbd.append(ehr_seq_td)
+            if self.med==1: 
+                ehr_seq_tm= Variable(torch.stack(ehr_seq_tlm,0)) 
+                ehr_seq_tm= zp(ehr_seq_tm) ## zero pad the visits med codes
+                mbm.append(ehr_seq_tm)
+            if self.oth==1: 
+                ehr_seq_to= Variable(torch.stack(ehr_seq_tlo,0)) 
+                ehr_seq_to= zp(ehr_seq_to) ## zero pad the visits dem&other codes
+                mbo.append(ehr_seq_to)
+            
+            if self.time:
+                time_dim_v= Variable(torch.stack(time_dim,0))
+                time_dim_pv= zp(time_dim_v)## zero pad the visits time diff codes
+                mtd.append(time_dim_pv)
+
+            
+        #mb_t= Variable(torch.stack(mb,0)) 
+        #if use_cuda:
+        #    mb_t.cuda()
+        #embedded = self.embed(mb_t)  ## Embedding for codes
+        #embedded = torch.sum(embedded, dim=2) #### split all the above
         
-        x , lt = self.EmbedPatient_MB(inputs)
+        if self.diag==1:
+            mb_td= Variable(torch.stack(mbd,0))
+            if use_cuda: mb_td.cuda()
+            embedded_d = torch.sum(self.embed_d(mb_td), dim=2)
+            embedded= embedded_d 
+        if self.med==1: 
+            mb_tm= Variable(torch.stack(mbm,0))
+            if use_cuda: mb_tm.cuda()  
+            embedded_m = torch.sum(self.embed_m(mb_tm), dim=2)
+            if self.diag==1: embedded=torch.cat((embedded,embedded_m),dim=2)
+            else: embedded=embedded_m 
+                
+        if self.oth==1: 
+            mb_to= Variable(torch.stack(mbo,0))
+            if use_cuda: mb_to.cuda()
+            embedded_o = torch.sum(self.embed_o(mb_to), dim=2)
+            if self.diag + self.med > 0 : embedded=torch.cat((embedded,embedded_o),dim=2)
+            else: embedded=embedded_o 
+
+        #embedded=torch.cat((embedded_d,embedded_m,embedded_o),dim=2)## the concatination of above
+        
+        lbt_t= Variable(torch.stack(lbt,0))
+        if self.time:
+            mtd_t= Variable(torch.stack(mtd,0))
+            if use_cuda: mtd_t.cuda()
+            out_emb= torch.cat((embedded,mtd_t),dim=2)
+        else:
+            out_emb= embedded
+        return out_emb, lbt_t,seq_l #,dem_emb
+
+    
+    def forward(self, inputs, hidden=None):
+        if self.multi_emb: x , lt ,_ = self.EmbedPatient_SMB(inputs)
+        else: x , lt ,_ = self.EmbedPatient_MB(inputs)
+ 
+        #x , lt , _ = self.EmbedPatient_MB(inputs)
+        x=x.permute(1,0,2)
         outputs = []
         for i, (cell, dilation) in enumerate(zip(self.cells, self.dilations)):
             if hidden is None:
-                x = self.drnn_layer(cell, x, dilation)
+                x,_ = self.drnn_layer(cell, x, dilation)
             else:
-                x = self.drnn_layer(cell, x, dilation, hidden[i])
+                x,hidden[i] = self.drnn_layer(cell, x, dilation, hidden[i])
             
-            outputs.append(x[-dilation:])
-
+            #outputs.append(x[-dilation:])
+        outputs=x[-dilation:]
         #x= F.sigmoid(F.max_pool1d(self.out(x)))
         #x = self.out(x).squeeze()
         #print ('x dim', x.size())
-        x = F.sigmoid(F.max_pool1d(self.out(x).permute(2,1,0),x.size(0)))
-
+        #x = F.sigmoid(F.max_pool1d(self.out(x).permute(2,1,0),x.size(0)))
+        x=F.sigmoid(self.out(torch.sum(outputs,0)))
+        
         return x.squeeze(), lt.squeeze()
 
     def drnn_layer(self, cell, inputs, rate, hidden=None):
@@ -280,15 +587,15 @@ class DRNN(nn.Module):
         dilated_inputs = self._prepare_inputs(inputs, rate)
 
         if hidden is None:
-            dilated_outputs = self._apply_cell(dilated_inputs, cell, batch_size, rate, hidden_size)
+            dilated_outputs, hidden = self._apply_cell(dilated_inputs, cell, batch_size, rate, hidden_size)
         else:
             hidden = self._prepare_inputs(hidden, rate)
-            dilated_outputs = self._apply_cell(dilated_inputs, cell, batch_size, rate, hidden_size, hidden=hidden)
+            dilated_outputs, hidden = self._apply_cell(dilated_inputs, cell, batch_size, rate, hidden_size, hidden=hidden)
 
         splitted_outputs = self._split_outputs(dilated_outputs, rate)
         outputs = self._unpad_outputs(splitted_outputs, n_steps)
 
-        return outputs
+        return outputs, hidden
     
        
     def _apply_cell(self, dilated_inputs, cell, batch_size, rate, hidden_size, hidden=None):
@@ -300,9 +607,9 @@ class DRNN(nn.Module):
             else:
                 hidden = self.init_hidden(batch_size * rate, hidden_size).unsqueeze(0)
 
-        dilated_outputs = cell(dilated_inputs, hidden)[0]
+        dilated_outputs, hidden = cell(dilated_inputs, hidden)
 
-        return dilated_outputs
+        return dilated_outputs, hidden
 
     def _unpad_outputs(self, splitted_outputs, n_steps):
 
@@ -356,6 +663,70 @@ class DRNN(nn.Module):
                 m = m.cuda()
             return (c, m)
         else:
-            return c
-            
-            
+            return c                        
+
+# Model 3: simple Logistic Regression(dimension = 2) 
+class EHR_LR(nn.Module):
+    def __init__(self,input_size, embed_dim = 2):    
+        super(EHR_LR, self).__init__()
+         
+        #object parameters and attributes 
+        self.embed_dim = embed_dim
+        self.embedding = nn.Embedding(input_size,embed_dim)
+        self.out = nn.Linear(self.embed_dim,1)
+        self.sigmoid = nn.Sigmoid()
+        #extracting initial weights, can be commentted out if not desired
+        self.x_emb_m = self.embedding.weight
+        
+    def forward(self, input):  #lets say the input the one sample data of the merged set  
+        label, ehr_seq = input[0] 
+        label_tensor = Variable(torch.FloatTensor([[float(label)]]))
+        if use_cuda:
+            label_tensor = label_tensor.cuda()
+        if use_cuda:
+            result = Variable(torch.LongTensor([int(v) for v in ehr_seq])).cuda() 
+        else:
+            result = Variable(torch.LongTensor([int(v) for v in ehr_seq])) 
+        embedded = self.embedding(result).view(-1, self.embed_dim) 
+        embedded = torch.sum(embedded, dim=0).view(1,-1)
+        output = self.sigmoid(self.out(embedded))
+        return output, label_tensor,embedded #return output and also label tensor
+
+# Model3 variation: LR(dimension = 128) that takes in pretrained embeddings     
+class EHR_LR_pretr(nn.Module):
+    def __init__(self,input_size, embed_dim= 128, preTrainEmb=False):    
+        super(EHR_LR_pretr, self).__init__()
+    
+        self.embed_dim = embed_dim
+        #self.embedding = nn.Embedding(input_size,embed_dim)
+        self.out = nn.Linear(self.embed_dim,1)
+        self.sigmoid = nn.Sigmoid()
+        self.preTrainEmb=preTrainEmb
+        #Need to modify here 
+        if self.preTrainEmb:
+           self.embed_dim = emb_t.size(1)
+           input_size = emb_t.size(0)
+           self.embedding = nn.EmbeddingBag(emb_t.size(0),emb_t.size(1))#,mode= 'sum')
+           self.embedding.weight.data= emb_t
+           self.embedding.weight.requires_grad=False
+         
+        else:
+           self.embedding = nn.Embedding(input_size, self.embed_dim) #mode= 'sum')
+        
+
+    def forward(self, input):  #lets say the input the one sample data of the merged set  
+        label, ehr_seq = input[0] 
+        #print(input[0]) 
+        label_tensor = Variable(torch.FloatTensor([[float(label)]]))
+        if use_cuda:
+            label_tensor = label_tensor.cuda()
+        if use_cuda:
+            result = Variable(torch.LongTensor([int(v) for v in ehr_seq])).cuda() 
+        else:
+            result = Variable(torch.LongTensor([int(v) for v in ehr_seq])) 
+        embedded = self.embedding(result).view(-1, self.embed_dim) #modified, instead of (-1,1, self.hidden_size) => use (-1,self.hidden_size)
+        embedded = torch.sum(embedded, dim=0).view(1,-1)#modified,instead of (1,1,-1) => use .view(1,-1) 
+        output = self.sigmoid(self.out(embedded))
+        
+        return output, label_tensor #return output and also label tensor 
+
