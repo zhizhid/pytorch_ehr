@@ -8,7 +8,9 @@
 * Experiments: folder with visualizations files (jupyter notebooks), larger datasets with separate tests for longer and shorter visits etc.;
 * Data used: Cerner, with 15815 unique medical codes. Full cohort with >1,000,000 records.
 * Sample results:
-* 1. <p float="left">
+
+* 1. <br>Heart Failure                               Readmission<br>
+     <p float="left">
        <img src="SampleResults/HF.png" alt="Heart Failure" height = "330" width="300" />
        <span>Heart Failure</span>
        <img src="SampleResults/Readm.png" alt="Readmission" height = "330" width="300" />
