@@ -8,17 +8,14 @@
 * Experiments: folder with visualizations files (jupyter notebooks), larger datasets with separate tests for longer and shorter visits etc.;
 * Data used: Cerner, with 15815 unique medical codes. Full cohort with >1,000,000 records.
 * Sample results:
-* 1. <br>Heart Failure<br>
-     <p float="left">
+*  <p float="left">
        <br>Heart Failure<br>
        <img src="SampleResults/HF.png" alt="Heart Failure" height = "330" width="270" />
-      <br>Heart Failure<br>
+       <br>Readmission<br>
        <img src="SampleResults/Readm.png" alt="Readmission" height = "330" width="270" />
-       <span>Readmission</span> 
-     </p>
-* 2. <p float="left">
+       <br>Comparision<br>
        <img src="SampleResults/comparision.png" alt="Comparision" width="540" />
-     </p>
+    </p>
 * The [paper]() upon which this repo was built. (include paper link)
 
 ## Prerequisites
