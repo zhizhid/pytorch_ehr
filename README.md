@@ -8,9 +8,12 @@
 * Experiments: folder with visualizations files (jupyter notebooks), larger datasets with separate tests for longer and shorter visits etc.;
 * Data used: Cerner, with 15815 unique medical codes. Full cohort with >1,000,000 records.
 * Sample results:
-* 1 <img align="left" width="300" height="250" src="SampleResults/HF.png">
-* 2 <img align="left" width="300" height="250" src="SampleResults/Readm.png">
-* 3 <img align="left" width="400" height="150" src="SampleResults/comparision.png">
+* 1.<img align="left" width="300" height="250" src="SampleResults/HF.png">
+
+* 2. <img align="left" width="300" height="250" src="SampleResults/Readm.png">
+
+* 3.<img align="left" width="400" height="150" src="SampleResults/comparision.png">
+
 * The [paper]() upon which this repo was built. (include paper link)
 
 ## Prerequisites
