@@ -9,7 +9,7 @@
 * Data used: Cerner, with 15815 unique medical codes. Full cohort with >1,000,000 records.
 * Sample results:
 * 
-  <p float="left"> 
+  
 * <p float= 'left" href="http://google.com.au/" rel="some text">!
        <img src="SampleResults/HF.png" alt="Heart Failure" alt="List screen" title="List screen" height = "330" width="270" />
        <img src="SampleResults/Readm.png" alt="Readmission" height = "330" width="270" />
