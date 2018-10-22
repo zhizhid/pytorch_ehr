@@ -2,8 +2,8 @@
 ***************** 
 * Predictive analytics of heart failture onset risk on EHR cerner data using Pytorch library;
 * Models built: Vanilla RNN, RNN with GRU, RNN with LSTM, Bidirectional RNN, Dialated RNN, Logistic Regression with embedding dimension 1 and 2;
-* The framework has modularized components for models, data loading and processing, and training, validation and test, main file for parsing arguments;
-* Dataloader: a separate function to allow you to utilize pytorch dataloader child object to load preprocessed data for testing our models;
+* The framework has modularized components for models, data loading and processing, EHRDataloader, training, validation and test, main file for parsing arguments;
+* EHRDataloader: a separate function to allow you to utilize pytorch dataloader child object to load preprocessed data batch for testing our models;
 * Bayesian Optimization implemented for hyperparameters search for models, both locally using open source BayesianOptimization package and SigOpt software; 
 * Other experiments include visualizations, larger datasets with separate tests for longer and shorter visits;
 * Data used: Cerner, with 15815 unique medical codes. 
@@ -17,6 +17,12 @@
 ## Authors
 
 See the list of [contributors]( https://github.com/ZhiGroup/pytorch_ehr/graphs/contributors) who participated in this project.
+
+## Acknowledgements
+hat-tip to:
+* [DRNN github](https://github.com/zalandoresearch/pt-dilate-rnn)
+* [QRNN github](https://github.com/salesforce/pytorch-qrnn)
+* [T-LSTM paper](http://biometrics.cse.msu.edu/Publications/MachineLearning/Baytasetal_PatientSubtypingViaTimeAwareLSTMNetworks.pdf)
 
 
 
