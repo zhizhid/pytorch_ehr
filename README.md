@@ -10,9 +10,10 @@
 * Sample results:
 * 1.![An image](SampleResults/HF.png | width = 250)
 
-* 2. <img align="left" width="300" height="250" src="SampleResults/Readm.png">
 
-* 3.<img align="left" width="400" height="150" src="SampleResults/comparision.png">
+* 2. <p><img align="left" width="300" height="250" src="SampleResults/Readm.png"></p>
+
+* 3. <p><img align="left" width="400" height="150" src="SampleResults/comparision.png"></p>
 
 * The [paper]() upon which this repo was built. (include paper link)
 
