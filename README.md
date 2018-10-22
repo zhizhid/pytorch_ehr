@@ -8,7 +8,7 @@
 * Experiments: folder with visualizations files (jupyter notebooks), larger datasets with separate tests for longer and shorter visits etc.;
 * Data used: Cerner, with 15815 unique medical codes. Full cohort with >1,000,000 records.
 * Sample results:
-* 1. ![Heart Failure Risk Overall](SampleResults/HF.png = 20 x 40)
+* 1. ![Heart Failure Risk Overall](SampleResults/HF.png| width =40, height =20)
 * 2. ![Readmission Risk Overall](SampleResults/Readm.png?raw=true "Title")
 * 3. ![Comparisions](SampleResults/comparision.png?raw=true "Title")
 * The [paper]() upon which this repo was built. (include paper link)
