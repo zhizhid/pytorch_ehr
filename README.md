@@ -20,13 +20,10 @@
 ## Tests:
 
 * To run our models, use:
-----
-terminal command to run the models
-----
+----terminal command to run the models
+
 * To try our dataloader, use:
-----
-sample data provided and dataloader file
-----
+----sample data provided and dataloader file
 (modify to details later)
 
 
