@@ -7,7 +7,8 @@
 * 2. Bayesian Optimization implemented for hyperparameters search for models, both locally using open source BayesianOptimization package and additionally using SigOpt software; 
 * Experiments: folder with visualizations files (jupyter notebooks), larger datasets with separate tests for longer and shorter visits etc.;
 * Data used: Cerner, with 15815 unique medical codes. Full cohort with >1,000,000 records.
-* Overall results: (include pictures)
+* Sample results:
+* 1. ![Heart Failure Risk Overall](SampleResults/HF.jpg?raw=true "Title")
 * The [paper]() upon which this repo was built. (include paper link)
 
 ## Prerequisites
