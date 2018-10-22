@@ -8,12 +8,7 @@
 * Experiments: folder with visualizations files (jupyter notebooks), larger datasets with separate tests for longer and shorter visits etc.;
 * Data used: Cerner, with 15815 unique medical codes. Full cohort with >1,000,000 records.
 * Sample results:
-<pre>
-hello, this is
-   just an     example
-....
-</pre>
-* Heart Failure                                        |                                      Readmission
+* Heart Failure &npsp;                                       |                                      Readmission
   <p float= "left">
        <img src="SampleResults/HF.png" alt="Heart Failure" alt="List screen" title="List screen" height = "330" width="270" />
        <img src="SampleResults/Readm.png" alt="Readmission" height = "330" width="270" />
@@ -33,10 +28,16 @@ hello, this is
 ## Tests
 
 * To run our models, use:
-----terminal command to run the models
+<pre>
+some terminal commands
+....
+</pre>
 
 * To try our dataloader, use:
-----sample data provided and dataloader file
+<pre>
+some terminal commmands with sample datasetss
+....
+</pre>
 (modify to details later)
 
 
