@@ -16,12 +16,18 @@
 * Bayesian Optimization, <https://github.com/fmfn/BayesianOptimization>
 * Optional: SigOpt software, <https://sigopt.com/> 
 
+
 ## Tests:
 
 * To run our models, use:
 ----
+terminal command to run the models
+----
 * To try our dataloader, use:
 ----
+sample data provided and dataloader file
+----
+(modify to details later)
 
 
 ## Authors
