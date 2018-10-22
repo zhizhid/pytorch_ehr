@@ -8,9 +8,12 @@
 * Experiments: folder with visualizations files (jupyter notebooks), larger datasets with separate tests for longer and shorter visits etc.;
 * Data used: Cerner, with 15815 unique medical codes. Full cohort with >1,000,000 records.
 * Sample results:
-* 1.![An image](SampleResults/HF.png?v=4&s=100)
+* 1. <p float="left">
+       <img src="SampleResults/HF.png" width="350" />
+       <img src="SampleResults/Readm.png" width="350" /> 
+     </p>
 
-
+* 2.![An image](SampleResults/HF.png?v=4&s=100)
 
 * 2. <p><img align="left" width="300" height="250" src="SampleResults/Readm.png"></p>
 
