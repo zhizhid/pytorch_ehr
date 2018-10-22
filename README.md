@@ -9,7 +9,7 @@
 * Data used: Cerner, with 15815 unique medical codes. Full cohort with >1,000,000 records.
 * Sample results:
 * Heart Failure                                        |                                      Readmission
-  <p float= 'left">
+  <p float= "left">
        <img src="SampleResults/HF.png" alt="Heart Failure" alt="List screen" title="List screen" height = "330" width="270" />
        <img src="SampleResults/Readm.png" alt="Readmission" height = "330" width="270" />
   </p>
