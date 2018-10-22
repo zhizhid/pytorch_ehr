@@ -132,10 +132,24 @@ def iter_batch(iterable, samplesize):
     return results
 
 
-# In[69]:
+# In[148]:
 
 
-#test, it works 
+def iterbatchloader(loader, batches = 1):
+    return iter_batch(loader, batches)
+
+
+# In[147]:
+
+
+EHRbatchloader(loader).__next__()
+
+
+# ### Test to produce either shuffled or non-shuffled batches using our loader
+
+# In[150]:
+
+
 custom_data_check = EHRdataFromPickles(root_dir = '/data/projects/py_ehr_2/Data/', 
                                        file = 'hf50_cl2_h143_ref_t1.train')
 display(custom_data_check.__len__())
@@ -157,13 +171,6 @@ loader = DataLoader(
 )
 
 
-# In[115]:
-
-
-def iterbatchloader(loader, batches = 1):
-        return iter_batch(loader, batches)
-
-
 # In[118]:
 
 
@@ -171,9 +178,15 @@ def iterbatchloader(loader, batches = 1):
 iterbatchloader(loader = loader)
 
 
-# In[121]:
+# In[129]:
 
 
 #or, call next
-iter(loader).__next__()
+iterloader = iter(loader)
+
+
+# In[149]:
+
+
+iterloader.__next__()
 
