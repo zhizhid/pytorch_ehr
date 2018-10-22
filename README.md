@@ -12,9 +12,9 @@
        <img src="SampleResults/HF.png" alt="Heart Failure" height = "400" width="350" />
        <img src="SampleResults/Readm.png" alt="Readmission" height = "400" width="350" /> 
      </p>
-
-* 3. <p><img align="left" width="400" height="150" src="SampleResults/comparision.png"></p>
-
+* 2. <p float="left">
+       <img src="SampleResults/comparision.png" alt="Comparision" width="700" />
+     </p>
 * The [paper]() upon which this repo was built. (include paper link)
 
 ## Prerequisites
