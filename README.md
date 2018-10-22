@@ -10,8 +10,7 @@
 * Sample results:
 * 1. <img align="left" width="300" height="250" src="SampleResults/HF.png">
 * 2. <img align="left" width="300" height="250" src="SampleResults/Readm.png">
-* 3. <img align="left" width="300" height="250" src="SampleResults/comparision.png">
-* 3. ![test](https://github.com/favicon.ico | width=48)
+* 3. <img align="left" width="400" height="150" src="SampleResults/comparision.png">
 * The [paper]() upon which this repo was built. (include paper link)
 
 ## Prerequisites
