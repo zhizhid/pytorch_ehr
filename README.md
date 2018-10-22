@@ -8,7 +8,8 @@
 * Experiments: folder with visualizations files (jupyter notebooks), larger datasets with separate tests for longer and shorter visits etc.;
 * Data used: Cerner, with 15815 unique medical codes. Full cohort with >1,000,000 records.
 * Sample results:
-* [<img src="http://www.google.com.au/images/nav_logo7.png">](http://google.com.au/)
+* [![Foo](http://www.google.com.au/images/nav_logo7.png)](http://google.com.au/)
+
   <p float="left"> 
        <a>
        <img src="SampleResults/HF.png" alt="Heart Failure" alt="List screen" title="List screen" height = "330" width="270" />
