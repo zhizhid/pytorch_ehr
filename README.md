@@ -10,10 +10,10 @@
 * Sample results:
 * 
   
-* <a float= 'left" href="http://google.com.au/" rel="some text">!
+* <p float= 'left" href="http://google.com.au/" rel="some text">
        <img src="SampleResults/HF.png" alt="Heart Failure" alt="List screen" title="List screen" height = "330" width="270" />
        <img src="SampleResults/Readm.png" alt="Readmission" height = "330" width="270" />
-  </a>
+  </p>
   <p float="left">
         <img src="SampleResults/comparision.png" alt="Comparision" width="540" />
   </p>
