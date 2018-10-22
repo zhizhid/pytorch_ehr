@@ -10,8 +10,8 @@
 * Sample results:
 * 
   <p float="left"> 
-       <a ref = "SampleResults/HF.png"> 
-       <img src="SampleResults/HF.png" alt="Heart Failure" alt="List screen" title="List screen" height = "330" width="270" />
+       ![Heart Failure]
+       (<img src="SampleResults/HF.png" alt="Heart Failure" alt="List screen" title="List screen" height = "330" width="270" />)
        <span>Heart Failure</span> </a>
        <a>
        <img src="SampleResults/Readm.png" alt="Readmission" height = "330" width="270" />
