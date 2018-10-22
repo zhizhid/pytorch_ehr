@@ -9,8 +9,10 @@
 * Data used: Cerner, with 15815 unique medical codes. Full cohort with >1,000,000 records.
 * Sample results:
 * 1. <p float="left">
-       <img src="SampleResults/HF.png" alt="Heart Failure" height = "330" width="300" /><span>Amazon</span>
-       <img src="SampleResults/Readm.png" alt="Readmission" height = "330" width="300" /><span>Amazon</span> 
+       <img src="SampleResults/HF.png" alt="Heart Failure" height = "330" width="300" />
+       <span>Heart Failure</span>
+       <img src="SampleResults/Readm.png" alt="Readmission" height = "330" width="300" />
+       <span>Readmission</span> 
      </p>
 * 2. <p float="left">
        <img src="SampleResults/comparision.png" alt="Comparision" width="600" />
