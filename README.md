@@ -9,8 +9,8 @@
 * Data used: Cerner, with 15815 unique medical codes. Full cohort with >1,000,000 records.
 * Sample results:
 * 1. <p float="left">
-       <img src="SampleResults/HF.png" width="350" />
-       <img src="SampleResults/Readm.png" width="350" /> 
+       <img src="SampleResults/HF.png" title="Angular" height = "400" width="350" />
+       <img src="SampleResults/Readm.png"title="Angular" height = "400" width="350" /> 
      </p>
 
 * 2.![An image](SampleResults/HF.png?v=4&s=100)
