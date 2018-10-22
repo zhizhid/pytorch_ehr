@@ -11,10 +11,10 @@
   <p float="left"> 
        <a>
        <img src="SampleResults/HF.png" alt="Heart Failure" height = "330" width="270" />
-      <span>Microsoft</span> </a>
+       <span>Heart Failure</span> </a>
        <a>
        <img src="SampleResults/Readm.png" alt="Readmission" height = "330" width="270" />
-        <span>Microsoft</span> </a>
+       <span>Readmission</span> </a>
   </p>
   <p float="left">
         <img src="SampleResults/comparision.png" alt="Comparision" width="540" />
