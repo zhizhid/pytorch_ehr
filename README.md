@@ -10,7 +10,7 @@
 * Sample results:
 * 
   <p float="left"> 
-       ![book](SampleResults/HF.png)
+* <p float= 'left" href="http://google.com.au/" rel="some text">!
        <img src="SampleResults/HF.png" alt="Heart Failure" alt="List screen" title="List screen" height = "330" width="270" />
        <img src="SampleResults/Readm.png" alt="Readmission" height = "330" width="270" />
   </p>
