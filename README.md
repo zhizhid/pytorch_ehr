@@ -29,14 +29,18 @@
 
 * To run our models, use:
 <pre>
-some terminal commands
-....
+python main.py <arg><arg> 
 </pre>
 
 * To try our dataloader, use:
 <pre>
-some terminal commmands with sample datasetss
-....
+data = EHRdatafrompickles(file = '') 
+loader =  
+#if you want to shuffle batches before using them 
+iterbatch = iter_batch(.....)
+#otherwise 
+iterloader = iter(loader)
+iterloader.__next__()
 </pre>
 (modify to details later)
 
