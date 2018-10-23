@@ -29,20 +29,21 @@
 
 * To run our models, use:
 <pre>
-python main.py <arg><arg> 
+python main.py -seq_file ... -label_file ...
 </pre>
 
 * To try our dataloader, use:
 <pre>
-data = EHRdatafrompickles(file = '') 
-loader =  
+data = EHRdataFromPickles(root_dir = '/data/projects/py_ehr_2/Data/', 
+                                      file = 'hf50_cl2_h143_ref_t1.train')
+loader =  ataLoader(data, batch_size=10, shuffle=False, collate_fn=my_collate)
 #if you want to shuffle batches before using them 
-iterbatch = iter_batch(.....)
+iterbatchloader(loader = loader)
 #otherwise 
 iterloader = iter(loader)
 iterloader.__next__()
+
 </pre>
-(modify to details later)
 
 
 ## Authors
