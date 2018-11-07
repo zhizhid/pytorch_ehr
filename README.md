@@ -1,13 +1,22 @@
 # Pytorch_ehr
 ***************** 
-* Predictive analytics of heart failture onset & readmission risk on EHR cerner data using Pytorch library;
+
+**Overview**
+* Predictive analytics of risk onset on EHR cerner data using Pytorch library;
+* Data description: Cerner, with 15815 unique medical codes. Full cohort with >1,000,000 records.
+format: 
+code types & what they stand for: 
+some visuals of the what the data looks like: 
 * Models built: Vanilla RNN, RNN with GRU, RNN with LSTM, Bidirectional RNN, Dialated RNN, QRNN, T-LSTM, GRU-Logistic Regression, plain LR, LR with embedding, Random Forest;
+
+**Folder Organization**
 * ehr_pytorch: main folder with modularized components for all models, data loading and processing, and training, validation and test of models, main file for parsing arguments, and a EHRDataloader;
 * 1. EHRDataloader: a separate function to allow for utilizing pytorch dataloader child object to create preprocessed data batch for testing our models;
-* 2. Bayesian Optimization implemented for hyperparameters search for models, both locally using open source BayesianOptimization package and additionally using SigOpt software; 
-* Experiments: folder with visualizations files (jupyter notebooks), larger datasets with separate tests for longer and shorter visits etc.;
-* Data used: Cerner, with 15815 unique medical codes. Full cohort with >1,000,000 records.
-* Sample results:
+* data: sample processed (pickled) data from Cerner, can be directly utilized for dataloader, and then models
+* Tutorials: jupyter notebooks with examples on how to utilize our dataloader and run our models with visuals
+* Test: coming up soon. Shell commands to quickly test on our package functionalities
+* Sphinx build documentations
+* Sample results:(? keep or discard? prob discard) 
 * Heart Failure   &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; |    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Readmission
   <p float= "left">
        <img src="SampleResults/HF.png" alt="Heart Failure" alt="List screen" title="List screen" height = "330" width="270" />
@@ -21,16 +30,10 @@
 ## Prerequisites
 
 * Pytorch library, <http://pytorch.org/> 
-* Bayesian Optimization, <https://github.com/fmfn/BayesianOptimization>
-* Optional: SigOpt software, <https://sigopt.com/> 
 
 
 ## Tests
 
-* To run our models, use:
-<pre>
-python main.py -seq_file ... -label_file ...
-</pre>
 
 * To try our dataloader, use:
 <pre>
@@ -42,7 +45,11 @@ iterbatchloader(loader = loader)
 #otherwise 
 iterloader = iter(loader)
 iterloader.__next__()
+</pre>
 
+* To run our models, use:
+<pre>
+python main.py -seq_file ... -label_file ...
 </pre>
 
 
