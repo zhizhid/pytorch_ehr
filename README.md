@@ -39,17 +39,19 @@ some visuals of the what the data looks like:
 <pre>
 data = EHRdataFromPickles(root_dir = '/data/projects/py_ehr_2/Data/', 
                                       file = 'hf50_cl2_h143_ref_t1.train')
-loader =  ataLoader(data, batch_size=10, shuffle=False, collate_fn=my_collate)
+loader =  EHRdataLoader(data)
 #if you want to shuffle batches before using them 
-iterbatchloader(loader = loader)
-#otherwise 
-iterloader = iter(loader)
-iterloader.__next__()
+loader = iter_batch2(loader = loader, len(loader))
+for i, batch in enumerate(loader): 
+    #feed the batch to do things 
+#otherwise, directly call 
+for i, batch in enumerate(loader): 
+    #feed the batch to do things
 </pre>
 
 * To run our models, use:
 <pre>
-python main.py -seq_file ... -label_file ...
+python main.py -file ... 
 </pre>
 
 
